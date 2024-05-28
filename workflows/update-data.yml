@@ -1,0 +1,32 @@
+name: Update Tesla Mileage Data
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Runs every hour
+  workflow_dispatch:
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Fetch Tesla mileage
+        env:
+          TESLA_ACCESS_TOKEN: ${{ secrets.TESLA_ACCESS_TOKEN }}
+          VEHICLE_ID: ${{ secrets.VEHICLE_ID }}
+        run: |
+          curl -H "Authorization: Bearer $TESLA_ACCESS_TOKEN" \
+               https://owner-api.teslamotors.com/api/1/vehicles/$VEHICLE_ID/data_request/vehicle_state \
+               -o mileage.json
+
+      - name: Update GitHub Pages
+        run: |
+          mv mileage.json docs/mileage.json
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git add docs/mileage.json
+          git commit -m 'Update mileage data'
+          git push
